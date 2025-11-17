@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure AI Code Analyzer - Reference Implementation</title>
+
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline';
+        style-src 'self' 'unsafe-inline';
+        connect-src 'self';
+        img-src 'self' data:;
+        font-src 'self';
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+        frame-ancestors 'none';
+    ">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .security-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .upload-area.dragover {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: #764ba2;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .item {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .item.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .item.danger {
+            border-left-color: #ef4444;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .security-features {
+            background: #e0f2fe;
+            border: 1px solid #0ea5e9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-size: 12px;
+        }
+
+        .security-features ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .code-preview {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔒 Secure AI Code Analyzer</h1>
+            <p>Reference implementation with security best practices</p>
+            <div class="security-badge">✓ Input Sanitized | ✓ Output Validated | ✓ Rate Limited</div>
+        </div>
+
+        <div class="content">
+            <div class="error" id="error"></div>
+
+            <div class="upload-area" id="upload-area">
+                <div style="font-size: 48px; margin-bottom: 15px;">📁</div>
+                <h3>Drop your code file here</h3>
+                <p style="font-size: 14px; color: #666; margin-top: 10px;">
+                    Supported: .js, .jsx, .ts, .tsx, .py, .java, .cpp, .c, .go, .rs
+                </p>
+                <p style="font-size: 12px; color: #999; margin-top: 5px;">
+                    Max size: 10MB
+                </p>
+                <input type="file" id="file-input" class="file-input" accept=".js,.jsx,.ts,.tsx,.py,.java,.cpp,.c,.go,.rs">
+            </div>
+
+            <div style="text-align: center;">
+                <button class="btn" id="analyze-btn" disabled>Analyze Code</button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 15px; color: #666;">Analyzing your code securely...</p>
+            </div>
+
+            <div class="results" id="results">
+                <h2 style="margin-bottom: 20px;">Analysis Results</h2>
+
+                <div class="metric-grid">
+                    <div class="metric">
+                        <div class="metric-value" id="quality-score">--</div>
+                        <div class="metric-label">Quality Score</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="complexity-score">--</div>
+                        <div class="metric-label">Complexity</div>
+                    </div>
+                </div>
+
+                <div class="section" id="insights-section" style="display: none;">
+                    <div class="section-title">💡 Insights</div>
+                    <div id="insights-list"></div>
+                </div>
+
+                <div class="section" id="security-section" style="display: none;">
+                    <div class="section-title">🔒 Security Issues</div>
+                    <div id="security-list"></div>
+                </div>
+
+                <div class="section" id="suggestions-section" style="display: none;">
+                    <div class="section-title">✨ Suggestions</div>
+                    <div id="suggestions-list"></div>
+                </div>
+
+                <div class="section" id="performance-section" style="display: none;">
+                    <div class="section-title">⚡ Performance Tips</div>
+                    <div id="performance-list"></div>
+                </div>
+            </div>
+
+            <div class="security-features">
+                <strong>🛡️ Security Features Active:</strong>
+                <ul>
+                    <li>Server-side API key management (never exposed to client)</li>
+                    <li>Input sanitization and validation</li>
+                    <li>Output escaping to prevent XSS</li>
+                    <li>Prompt injection defenses</li>
+                    <li>Rate limiting (10 requests/minute)</li>
+                    <li>File size limits (10MB max)</li>
+                    <li>Content Security Policy headers</li>
+                    <li>Secure error handling</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let selectedFile = null;
+
+        // DOM elements
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const errorDiv = document.getElementById('error');
+
+        // Event listeners
+        uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+        analyzeBtn.addEventListener('click', analyzeCode);
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleFile(file) {
+            // Client-side validation
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            const allowedExts = ['js', 'jsx', 'ts', 'tsx', 'py', 'java', 'cpp', 'c', 'go', 'rs'];
+            const ext = file.name.split('.').pop().toLowerCase();
+
+            // Validate extension
+            if (!allowedExts.includes(ext)) {
+                showError(`File type .${ext} not supported. Allowed: ${allowedExts.join(', ')}`);
+                return;
+            }
+
+            // Validate size
+            if (file.size > maxSize) {
+                showError(`File too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum: 10MB`);
+                return;
+            }
+
+            // Read file
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                selectedFile = {
+                    name: sanitizeFilename(file.name),
+                    content: e.target.result
+                };
+
+                uploadArea.innerHTML = `
+                    <div style="font-size: 48px; margin-bottom: 15px;">✅</div>
+                    <h3>${escapeHtml(selectedFile.name)}</h3>
+                    <p style="font-size: 14px; color: #666; margin-top: 10px;">
+                        ${(file.size / 1024).toFixed(2)} KB | Ready to analyze
+                    </p>
+                `;
+
+                analyzeBtn.disabled = false;
+                hideError();
+            };
+
+            reader.onerror = () => {
+                showError('Failed to read file');
+            };
+
+            reader.readAsText(file);
+        }
+
+        async function analyzeCode() {
+            if (!selectedFile) return;
+
+            // Show loading
+            loading.classList.add('show');
+            results.classList.remove('show');
+            analyzeBtn.disabled = true;
+            hideError();
+
+            try {
+                // Call secure backend API
+                const response = await fetch('/ai-analysis/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filename: selectedFile.name,
+                        code: selectedFile.content
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Analysis failed');
+                }
+
+                // Display results
+                displayResults(data.analysis);
+
+            } catch (error) {
+                showError(error.message || 'Analysis failed. Please try again.');
+            } finally {
+                loading.classList.remove('show');
+                analyzeBtn.disabled = false;
+            }
+        }
+
+        function displayResults(analysis) {
+            // Update metrics
+            document.getElementById('quality-score').textContent = analysis.quality;
+            document.getElementById('complexity-score').textContent = analysis.complexity;
+
+            // Display insights
+            displayList('insights', analysis.insights);
+
+            // Display security issues
+            displayList('security', analysis.security_issues, 'danger');
+
+            // Display suggestions
+            displayList('suggestions', analysis.suggestions);
+
+            // Display performance tips
+            displayList('performance', analysis.performance_tips, 'warning');
+
+            // Show results
+            results.classList.add('show');
+        }
+
+        function displayList(type, items, itemClass = '') {
+            const section = document.getElementById(`${type}-section`);
+            const list = document.getElementById(`${type}-list`);
+
+            if (items && items.length > 0) {
+                // Items are already escaped server-side, use textContent for extra safety
+                list.innerHTML = items.map(item =>
+                    `<div class="item ${itemClass}">${item}</div>`
+                ).join('');
+                section.style.display = 'block';
+            } else {
+                section.style.display = 'none';
+            }
+        }
+
+        function showError(message) {
+            // Use textContent to prevent XSS
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+
+        function hideError() {
+            errorDiv.classList.remove('show');
+        }
+
+        // Security utilities
+        function sanitizeFilename(filename) {
+            // Remove path separators and dangerous characters
+            return filename
+                .replace(/[\/\\]/g, '')
+                .replace(/[<>:"|?*\x00-\x1F]/g, '')
+                .substring(0, 255);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

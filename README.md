@@ -31,6 +31,31 @@ Comprehensive status monitoring with:
 #### Fairness & Ethics
 - **Bias Detection**: Analyze models for bias and fairness issues
 
+### AI Code Analysis Endpoint
+Secure implementation of AI-powered code analysis:
+- **Quality Analysis**: Assess code quality with AI (0-100 score)
+- **Complexity Metrics**: Measure code complexity
+- **Security Issue Detection**: Identify potential security vulnerabilities
+- **Performance Optimization**: Get AI-powered performance improvement suggestions
+- **Best Practices**: Receive coding best practice recommendations
+
+**Security Features:**
+- ✅ Server-side API key management
+- ✅ Input sanitization and validation
+- ✅ Prompt injection defenses
+- ✅ Rate limiting (10 requests/minute)
+- ✅ Output validation and escaping
+- ✅ File size limits (10MB max)
+
+### Security Analysis Reports
+Comprehensive security analysis of AI applications:
+- **Vulnerability Assessment**: Detailed security audit reports
+- **Exploit Documentation**: Educational proof-of-concept examples
+- **Secure Reference Implementation**: Best practices demonstration
+- **Testing Guidance**: Security testing methodologies
+
+See [analysis/README.md](./analysis/README.md) for details.
+
 ## Installation
 
 ```bash
@@ -65,6 +90,52 @@ npm test
 GET /
 ```
 Returns API information and available endpoints.
+
+### AI Analysis Endpoints
+
+#### Analyze Code
+```
+POST /ai-analysis/analyze
+```
+Analyzes code with AI for quality, security, and performance issues.
+
+**Request Body:**
+```json
+{
+  "filename": "example.js",
+  "code": "function example() { return 'Hello'; }"
+}
+```
+
+**Response Example:**
+```json
+{
+  "success": true,
+  "filename": "example.js",
+  "analysis": {
+    "quality": 75,
+    "complexity": 60,
+    "tags": ["javascript", "needs-review"],
+    "insights": ["Code structure is generally good", "Consider adding error handling"],
+    "suggestions": ["Add input validation", "Implement error handling"],
+    "security_issues": ["Missing input sanitization"],
+    "performance_tips": ["Consider caching repeated calculations"]
+  },
+  "timestamp": "2025-11-17T10:00:00.000Z"
+}
+```
+
+#### AI Analysis Health
+```
+GET /ai-analysis/health
+```
+Health check for AI analysis service.
+
+#### AI Analysis Capabilities
+```
+GET /ai-analysis/capabilities
+```
+Returns supported file types, limits, and features.
 
 ### Status Endpoints
 
