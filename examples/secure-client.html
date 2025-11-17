@@ -473,10 +473,23 @@
             const list = document.getElementById(`${type}-list`);
 
             if (items && items.length > 0) {
-                // Items are already escaped server-side, use textContent for extra safety
-                list.innerHTML = items.map(item =>
-                    `<div class="item ${itemClass}">${item}</div>`
-                ).join('');
+                // Defense in depth: Create elements safely instead of using innerHTML
+                // Validate itemClass to prevent attribute injection
+                const validClasses = ['', 'warning', 'danger'];
+                const safeClass = validClasses.includes(itemClass) ? itemClass : '';
+
+                // Clear existing content
+                list.innerHTML = '';
+
+                // Create elements using DOM API (safer than innerHTML)
+                items.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = `item ${safeClass}`.trim();
+                    // Use textContent to prevent any HTML injection
+                    div.textContent = item;
+                    list.appendChild(div);
+                });
+
                 section.style.display = 'block';
             } else {
                 section.style.display = 'none';

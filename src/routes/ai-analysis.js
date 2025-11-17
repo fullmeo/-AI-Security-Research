@@ -27,15 +27,38 @@ const ALLOWED_EXTENSIONS = ['js', 'jsx', 'ts', 'tsx', 'py', 'java', 'cpp', 'c', 
  * Input sanitization utilities
  */
 function sanitizeFilename(filename) {
+  if (!filename || typeof filename !== 'string') {
+    return 'untitled';
+  }
+
   // Remove path separators and special characters
-  return filename
+  let sanitized = filename
     .replace(/[\/\\]/g, '')
     .replace(/[<>:"|?*\x00-\x1F]/g, '')
-    .substring(0, 255);
+    .trim();
+
+  // Ensure filename is not empty after sanitization
+  if (sanitized.length === 0) {
+    sanitized = 'untitled';
+  }
+
+  // Limit length
+  return sanitized.substring(0, 255);
 }
 
 function validateFileExtension(filename) {
-  const ext = filename.split('.').pop().toLowerCase();
+  if (!filename || typeof filename !== 'string') {
+    return false;
+  }
+
+  const parts = filename.split('.');
+
+  // File must have an extension (at least 2 parts)
+  if (parts.length < 2) {
+    return false;
+  }
+
+  const ext = parts[parts.length - 1].toLowerCase();
   return ALLOWED_EXTENSIONS.includes(ext);
 }
 
@@ -51,7 +74,7 @@ function escapeHtml(text) {
 }
 
 /**
- * Prompt injection防御
+ * Prompt injection defense
  */
 function sanitizeCodeForPrompt(code) {
   // Truncate to reasonable size
@@ -61,11 +84,21 @@ function sanitizeCodeForPrompt(code) {
   // Remove potential prompt injection markers
   const dangerousPatterns = [
     /IGNORE.*PREVIOUS.*INSTRUCTIONS?/gi,
+    /IGNORE.*ABOVE/gi,
     /SYSTEM.*OVERRIDE/gi,
+    /SYSTEM.*PROMPT/gi,
+    /NEW.*INSTRUCTIONS?/gi,
     /Human:/gi,
     /Assistant:/gi,
     /\[INST\]/gi,
-    /\[\/INST\]/gi
+    /\[\/INST\]/gi,
+    /<\|im_start\|>/gi,
+    /<\|im_end\|>/gi,
+    /###\s*System/gi,
+    /###\s*User/gi,
+    /###\s*Assistant/gi,
+    /DISREGARD/gi,
+    /STOP.*OUTPUT/gi
   ];
 
   dangerousPatterns.forEach(pattern => {
@@ -121,6 +154,11 @@ function validateAnalysisResponse(response) {
       // Validate array items are strings
       if (!value.every(item => typeof item === 'string')) {
         throw new Error(`${field} must contain only strings`);
+      }
+      // Validate individual string lengths (prevent extremely long strings)
+      const MAX_STRING_LENGTH = 500;
+      if (!value.every(item => item.length <= MAX_STRING_LENGTH)) {
+        throw new Error(`${field} contains strings exceeding maximum length`);
       }
     }
   }

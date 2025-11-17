@@ -12,10 +12,52 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Security middleware
-app.use(helmet());
-app.use(cors());
+// Configure helmet with stricter security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // unsafe-inline needed for demo, remove in production
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+}));
+
+// Configure CORS - restrict to specific origins in production
+const corsOptions = {
+  origin: process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : '*', // In production, replace with specific origins
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+  credentials: false,
+  maxAge: 86400 // 24 hours
+};
+app.use(cors(corsOptions));
+
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' })); // Limit payload size
+
+// Additional security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  next();
+});
 
 // Serve static files from examples directory
 app.use('/examples', express.static('examples'));
@@ -63,10 +105,22 @@ app.use((req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  // Log error securely (don't expose stack traces in production logs)
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[ERROR]', {
+      message: err.message,
+      timestamp: new Date().toISOString(),
+      ip: req.ip,
+      path: req.path
+    });
+  } else {
+    console.error(err.stack);
+  }
+
+  // Never expose error details to client in production
   res.status(500).json({
     error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'production' ? 'An error occurred' : err.message
+    message: 'An error occurred while processing your request'
   });
 });
 
