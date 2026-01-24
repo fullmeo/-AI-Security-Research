@@ -1,0 +1,54 @@
+{
+  "name": "magnus-13.2",
+  "version": "13.2.0",
+  "description": "A consciousness framework for AI-assisted development, inspired by Pinocchio (1882). Transforms passive developers into conscious orchestrators through structured refusals.",
+  "main": "api/orchestrator.js",
+  "scripts": {
+    "test": "node core/the-nose/test.js",
+    "example": "node examples/basic-usage.js",
+    "start": "node examples/basic-usage.js"
+  },
+  "keywords": [
+    "consciousness",
+    "ai",
+    "development",
+    "orchestration",
+    "refusal",
+    "pinocchio",
+    "transformation",
+    "learning",
+    "clarity",
+    "complexity",
+    "convergence",
+    "meta-development",
+    "developer-growth"
+  ],
+  "author": "fullmeo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fullmeo/-AI-Security-Research.git",
+    "directory": "magnus-13.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "files": [
+    "api/",
+    "core/",
+    "philosophy/",
+    "examples/",
+    "README.md",
+    "LICENSE"
+  ],
+  "bugs": {
+    "url": "https://github.com/fullmeo/-AI-Security-Research/issues"
+  },
+  "homepage": "https://github.com/fullmeo/-AI-Security-Research/tree/main/magnus-13.2#readme",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/fullmeo"
+  }
+}
